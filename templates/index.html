@@ -3,27 +3,26 @@
 <head>
     <title>AI Pro Advanced Bot</title>
     <style>
-        body { background: #0d1117; color: white; text-align: center; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
-        .container { border: 2px solid #00ff00; padding: 30px; margin: 50px auto; width: 350px; border-radius: 20px; background: #161b22; box-shadow: 0 0 20px rgba(0,255,0,0.2); }
-        select, button { padding: 12px; margin: 10px; border-radius: 8px; border: none; width: 80%; font-size: 16px; }
-        select { background: #30363d; color: white; }
-        button { background: #238636; color: white; font-weight: bold; cursor: pointer; transition: 0.3s; }
-        button:hover { background: #2ea043; }
-        #signal { font-size: 28px; margin: 20px; color: #58a6ff; }
-        .info { color: #8b949e; font-size: 14px; }
+        body { background: #0d1117; color: white; text-align: center; font-family: sans-serif; }
+        .container { border: 2px solid #00ff00; padding: 30px; margin: 50px auto; width: 350px; border-radius: 20px; background: #161b22; }
+        select, button { padding: 12px; margin: 10px; border-radius: 8px; width: 80%; font-size: 16px; }
+        select { background: #30363d; color: white; border: 1px solid #00ff00; }
+        button { background: #238636; color: white; font-weight: bold; cursor: pointer; }
+        #signal { font-size: 28px; margin: 20px; color: #58a6ff; font-weight: bold; }
     </style>
 </head>
 <body>
     <div class="container">
         <h2>🤖 AI PRO TRADER</h2>
-        <p class="info">Select Market & Analysis</p>
+        <p>Choose Market:</p>
         
         <select id="marketSelect">
             <option value="BTCUSDT">Bitcoin (BTC/USDT)</option>
             <option value="ETHUSDT">Ethereum (ETH/USDT)</option>
             <option value="SOLUSDT">Solana (SOL/USDT)</option>
             <option value="BNBUSDT">Binance Coin (BNB/USDT)</option>
-            <option value="DOGEUSDT">Dogecoin (DOGE/USDT)</option>
+            <option value="EURUSDT">EUR/USD (Forex Pair)</option>
+            <option value="GBPUSDT">GBP/USD (Forex Pair)</option>
         </select>
 
         <div id="signal">READY</div>
@@ -36,22 +35,11 @@
         function analyze() {
             let market = document.getElementById('marketSelect').value;
             document.getElementById('signal').innerText = "ANALYZING...";
-            
             fetch(`/get_signal?market=${market}`)
                 .then(res => res.json())
                 .then(data => {
-                    let sigBox = document.getElementById('signal');
-                    sigBox.innerText = data.signal;
-                    
-                    // Colors based on signal
-                    if(data.signal.includes("BUY")) sigBox.style.color = "#3fb950";
-                    else if(data.signal.includes("SELL")) sigBox.style.color = "#f85149";
-                    else sigBox.style.color = "#58a6ff";
-
+                    document.getElementById('signal').innerText = data.signal;
                     document.getElementById('rsi-display').innerText = "RSI: " + data.rsi;
-                })
-                .catch(err => {
-                    document.getElementById('signal').innerText = "ERROR";
                 });
         }
     </script>
