@@ -1,96 +1,58 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Haider trading bot - Custom</title>
+    <title>AI Pro Advanced Bot</title>
     <style>
-        body { background: #0b0e11; color: white; font-family: sans-serif; padding: 15px; }
-        .card { background: #161a1e; border: 2px solid #2ecc71; border-radius: 20px; padding: 20px; max-width: 450px; margin: auto; }
-        .input-group { margin-bottom: 15px; text-align: left; }
-        input, select { width: 100%; padding: 12px; background: #21262d; border: 1px solid #30363d; color: white; border-radius: 8px; font-size: 16px; margin-top: 5px; }
-        .signal-box { background: #21262d; padding: 20px; border-radius: 15px; margin: 15px 0; border-left: 6px solid #f1c40f; }
-        #sig-text { font-size: 32px; font-weight: bold; color: #f1c40f; }
-        #prob-text { font-size: 24px; color: #2ecc71; font-weight: bold; }
-        .timer { font-size: 18px; color: #e74c3c; font-weight: bold; margin-top: 10px; }
-        .btn { background: #2ecc71; color: black; border: none; padding: 18px; width: 100%; font-size: 20px; font-weight: bold; border-radius: 12px; cursor: pointer; }
+        body { background: #0d1117; color: white; text-align: center; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        .container { border: 2px solid #00ff00; padding: 30px; margin: 50px auto; width: 350px; border-radius: 20px; background: #161b22; box-shadow: 0 0 20px rgba(0,255,0,0.2); }
+        select, button { padding: 12px; margin: 10px; border-radius: 8px; border: none; width: 80%; font-size: 16px; }
+        select { background: #30363d; color: white; }
+        button { background: #238636; color: white; font-weight: bold; cursor: pointer; transition: 0.3s; }
+        button:hover { background: #2ea043; }
+        #signal { font-size: 28px; margin: 20px; color: #58a6ff; }
+        .info { color: #8b949e; font-size: 14px; }
     </style>
 </head>
 <body>
-    <div class="card">
-        <h2 style="color:#2ecc71; text-align:center;">🚀 AI PRO CONFIG</h2>
-        <div class="input-group">
-    <label>CHOOSE MARKET</label>
-    <select id="asset-input">
-        <optgroup label="Crypto">
-            <option value="BTCUSDT">BTC/USDT</option>
-            <option value="ETHUSDT">ETH/USDT</option>
-            <option value="SOLUSDT">SOL/USDT</option>
-        </optgroup>
-        <optgroup label="Forex">
-            <option value="EURUSD">EUR/USD</option>
-            <option value="GBPUSD">GBP/USD</option>
-            <option value="USDJPY">USD/JPY</option>
-            <option value="AUDUSD">AUD/USD</option>
-        </optgroup>
-        <optgroup label="OTC Markets">
-            <option value="NZDCAD_OTC">NZD/CAD (OTC)</option>
-            <option value="AUDCHF_OTC">AUD/CHF (OTC)</option>
-        </optgroup>
-        <optgroup label="Stocks & Commodities">
-            <option value="GOLD">GOLD (XAUUSD)</option>
-            <option value="APPLE">APPLE</option>
-            <option value="TESLA">TESLA</option>
-        </optgroup>
-    </select>
-</div>
-        <div class="input-group">
-            <label>TIME FRAME (Seconds)</label>
-            <input type="number" id="time-input" value="15">
-        </div>
+    <div class="container">
+        <h2>🤖 AI PRO TRADER</h2>
+        <p class="info">Select Market & Analysis</p>
+        
+        <select id="marketSelect">
+            <option value="BTCUSDT">Bitcoin (BTC/USDT)</option>
+            <option value="ETHUSDT">Ethereum (ETH/USDT)</option>
+            <option value="SOLUSDT">Solana (SOL/USDT)</option>
+            <option value="BNBUSDT">Binance Coin (BNB/USDT)</option>
+            <option value="DOGEUSDT">Dogecoin (DOGE/USDT)</option>
+        </select>
 
-        <div class="signal-box">
-            <div id="sig-text">READY</div>
-            <div id="prob-text">WIN RATE: --%</div>
-            <div id="rec-text" style="font-size:14px; color:#848e9c;">Select market and press start</div>
-            <div class="timer" id="timer-display"></div>
-        </div>
-
-        <button class="btn" onclick="startTrade()">START ANALYSIS ✨</button>
+        <div id="signal">READY</div>
+        <div id="rsi-display">RSI: --</div>
+        
+        <button onclick="analyze()">START ANALYSIS</button>
     </div>
 
     <script>
-        let countdown;
-        function startTrade() {
-            const asset = document.getElementById('asset-input').value;
-            const timeframe = document.getElementById('time-input').value;
+        function analyze() {
+            let market = document.getElementById('marketSelect').value;
+            document.getElementById('signal').innerText = "ANALYZING...";
             
-            // Send settings to backend
-            fetch('/api/update_settings', {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({asset: asset, timeframe: timeframe})
-            });
+            fetch(`/get_signal?market=${market}`)
+                .then(res => res.json())
+                .then(data => {
+                    let sigBox = document.getElementById('signal');
+                    sigBox.innerText = data.signal;
+                    
+                    // Colors based on signal
+                    if(data.signal.includes("BUY")) sigBox.style.color = "#3fb950";
+                    else if(data.signal.includes("SELL")) sigBox.style.color = "#f85149";
+                    else sigBox.style.color = "#58a6ff";
 
-            // Get Signal
-            document.getElementById('sig-text').innerText = "ANALYZING...";
-            fetch('/api/signal').then(r => r.json()).then(data => {
-                document.getElementById('sig-text').innerText = data.latest_signal;
-                document.getElementById('prob-text').innerText = "PROBABILITY: " + data.probability + "%";
-                document.getElementById('rec-text').innerText = data.recommendation;
-                
-                // Start Countdown
-                let timeLeft = timeframe;
-                clearInterval(countdown);
-                countdown = setInterval(() => {
-                    document.getElementById('timer-display').innerText = "⏳ TRADE ENDS IN: " + timeLeft + "s";
-                    if(timeLeft <= 0) {
-                        clearInterval(countdown);
-                        document.getElementById('timer-display').innerText = "✅ TRADE FINISHED";
-                    }
-                    timeLeft--;
-                }, 1000);
-            });
+                    document.getElementById('rsi-display').innerText = "RSI: " + data.rsi;
+                })
+                .catch(err => {
+                    document.getElementById('signal').innerText = "ERROR";
+                });
         }
     </script>
 </body>

@@ -1,81 +1,54 @@
-import os
-import time
-import threading
-import pandas as pd
-import numpy as np
 from flask import Flask, render_template, jsonify, request
+import pandas as pd
+import requests
 
 app = Flask(__name__)
 
-# Global state
-bot_settings = {
-    "asset": "BTCUSDT",
-    "timeframe": 15,
-    "latest_signal": "WAITING",
-    "probability": 0,
-    "recommendation": "WAITING FOR ANALYSIS",
-    "last_update": "N/A"
-}
+# Binance se data lene ka function (Market dynamic hai)
+def get_binance_data(symbol, interval="5m"):
+    url = f"https://api.binance.com/api/v3/klines?symbol={symbol.upper()}&interval={interval}&limit=100"
+    data = requests.get(url).json()
+    df = pd.DataFrame(data, columns=['timestamp', 'open', 'high', 'low', 'close', 'volume', 'close_time', 'qav', 'num_trades', 'taker_base', 'taker_quote', 'ignore'])
+    df['close'] = df['close'].astype(float)
+    return df
 
-def calculate_logic(asset):
-    # Asli trading bots mein yahan Binance API se data aata hai
-    # Filhal ye advanced statistical probability use kar raha hai
-    prices = pd.Series(np.random.normal(100, 2, 100))
-    change = prices.pct_change().iloc[-1]
+# Pro Beast Logic with Trend Filter
+def calculate_signals(df):
+    # RSI Calculation
+    delta = df['close'].diff()
+    gain = (delta.where(delta > 0, 0)).rolling(window=14).mean()
+    loss = (-delta.where(delta < 0, 0)).rolling(window=14).mean()
+    rs = gain / loss
+    df['rsi'] = 100 - (100 / (1 + rs))
     
-    # RSI aur Momentum Logic
-    prob = np.random.randint(65, 96) # 65% se 95% ke darmiyan win rate
+    # EMA 20 for Trend
+    df['ema_20'] = df['close'].ewm(span=20, adjust=False).mean()
     
-    if change < -0.001:
-        sig = "🔥 CALL (BUY) 🔥"
-        rec = f"STRONG BUY AT {asset}"
-    elif change > 0.001:
-        sig = "🔥 PUT (SELL) 🔥"
-        rec = f"STRONG SELL AT {asset}"
+    last_row = df.iloc[-1]
+    prev_row = df.iloc[-2]
+    
+    # Logic: RSI + Price above/below EMA
+    if last_row['rsi'] > 30 and prev_row['rsi'] <= 30 and last_row['close'] > last_row['ema_20']:
+        return "🔥 STRONG BUY", round(last_row['rsi'], 2)
+    elif last_row['rsi'] < 70 and prev_row['rsi'] >= 70 and last_row['close'] < last_row['ema_20']:
+        return "📉 STRONG SELL", round(last_row['rsi'], 2)
     else:
-        sig = "⌛ NEUTRAL"
-        rec = "MARKET STABLE - AVOID TRADE"
-        prob = 50
+        return "😴 NO TRADE", round(last_row['rsi'], 2)
 
-    return sig, prob, rec
-# app.py mein ye markets add karein
-markets_list = [
-    {"id": "BTCUSDT", "name": "BTC/USDT (Crypto)"},
-    {"id": "ETHUSDT", "name": "ETH/USDT (Crypto)"},
-    {"id": "SOLUSDT", "name": "SOL/USDT (Crypto)"},
-    {"id": "EURUSD", "name": "EUR/USD (Forex)"},
-    {"id": "GBPUSD", "name": "GBP/USD (Forex)"},
-    {"id": "USDJPY", "name": "USD/JPY (Forex)"},
-    {"id": "AUDUSD", "name": "AUD/USD (Forex)"},
-    {"id": "GOLD", "name": "GOLD / XAUUSD"},
-    {"id": "NZDCAD_OTC", "name": "NZD/CAD (OTC)"},
-    {"id": "AUDCHF_OTC", "name": "AUD/CHF (OTC)"},
-    {"id": "APPLE", "name": "Apple Inc. (Stock)"},
-    {"id": "TESLA", "name": "Tesla (Stock)"}
-]
 @app.route('/')
 def index():
     return render_template('index.html')
 
-@app.route('/api/update_settings', methods=['POST'])
-def update_settings():
-    data = request.json
-    bot_settings['asset'] =  data.get('asset', 'BTCUSDT')
-    bot_settings['timeframe'] = int(data.get('timeframe', 15))
-    return jsonify({"status": "success"})
-
-@app.route('/api/signal')
+@app.route('/get_signal')
 def get_signal():
-    sig, prob, rec = calculate_logic(bot_settings['asset'])
-    bot_settings.update({
-        "latest_signal": sig,
-        "probability": prob,
-        "recommendation": rec,
-        "last_update": time.strftime("%H:%M:%S")
-    })
-    return jsonify(bot_settings)
+    # YAHAN HAI MARKET OPTION: Frontend se 'market' mangwaya hai
+    market = request.args.get('market', 'BTCUSDT') 
+    try:
+        df = get_binance_data(market)
+        signal, rsi_val = calculate_signals(df)
+        return jsonify({'signal': signal, 'rsi': rsi_val, 'market': market})
+    except Exception as e:
+        return jsonify({'status': 'Error', 'message': "Invalid Market"})
 
-if __name__ == "__main__":
-    port = int(os.environ.get("PORT", 5000))
-    app.run(host='0.0.0.0', port=port)
-    
+if __name__ == '__main__':
+    app.run(debug=True)
