@@ -1,46 +1,86 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>AI Pro Advanced Bot</title>
+    <title>AI Pro God Mode v6.0</title>
     <style>
-        body { background: #0d1117; color: white; text-align: center; font-family: sans-serif; }
-        .container { border: 2px solid #00ff00; padding: 30px; margin: 50px auto; width: 350px; border-radius: 20px; background: #161b22; }
-        select, button { padding: 12px; margin: 10px; border-radius: 8px; width: 80%; font-size: 16px; }
-        select { background: #30363d; color: white; border: 1px solid #00ff00; }
-        button { background: #238636; color: white; font-weight: bold; cursor: pointer; }
-        #signal { font-size: 28px; margin: 20px; color: #58a6ff; font-weight: bold; }
+        :root { --accent: #00d2ff; --bg: #0b0e11; --card: #1e2329; }
+        body { background: var(--bg); color: #eaecef; font-family: 'Segoe UI', sans-serif; margin: 0; padding: 20px; }
+        .container { max-width: 800px; margin: auto; }
+        .dashboard { background: var(--card); border-radius: 16px; padding: 30px; box-shadow: 0 8px 32px rgba(0,0,0,0.3); border: 1px solid #474d57; }
+        .status-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #474d57; padding-bottom: 15px; }
+        .signal-box { font-size: 36px; font-weight: 800; margin: 30px 0; letter-spacing: -1px; }
+        .grid-info { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 15px; margin-bottom: 25px; }
+        .info-item { background: #2b3139; padding: 15px; border-radius: 8px; text-align: center; }
+        input, button { width: 100%; padding: 15px; border-radius: 8px; border: none; margin-top: 10px; font-size: 16px; }
+        input { background: #2b3139; color: white; border: 1px solid #474d57; }
+        button { background: #f0b90b; color: #000; font-weight: bold; cursor: pointer; transition: 0.2s; }
+        button:hover { background: #fcd535; }
+        #auto-status { color: #848e9c; font-size: 12px; margin-top: 10px; }
     </style>
 </head>
 <body>
     <div class="container">
-        <h2>🤖 AI PRO TRADER</h2>
-        <p>Choose Market:</p>
-        
-        <select id="marketSelect">
-            <option value="BTCUSDT">Bitcoin (BTC/USDT)</option>
-            <option value="ETHUSDT">Ethereum (ETH/USDT)</option>
-            <option value="SOLUSDT">Solana (SOL/USDT)</option>
-            <option value="BNBUSDT">Binance Coin (BNB/USDT)</option>
-            <option value="EURUSDT">EUR/USD (Forex Pair)</option>
-            <option value="GBPUSDT">GBP/USD (Forex Pair)</option>
-        </select>
+        <div class="dashboard">
+            <div class="status-header">
+                <h2 style="margin:0;">🏦 PRO ULTRA v6.0</h2>
+                <div id="trend-label" style="color:#00ff00;">SCANNING 250-DAY...</div>
+            </div>
 
-        <div id="signal">READY</div>
-        <div id="rsi-display">RSI: --</div>
-        
-        <button onclick="analyze()">START ANALYSIS</button>
+            <div id="signal-display" class="signal-box">STANDBY</div>
+
+            <div class="grid-info">
+                <div class="info-item"><small>ACCURACY</small><br><b id="accuracy">--</b></div>
+                <div class="info-item"><small>LIVE PRICE</small><br><b id="price">--</b></div>
+                <div class="info-item"><small>250D TREND</small><br><b id="trend">--</b></div>
+            </div>
+
+            <p id="message" style="color: #848e9c;">Institutional Analysis: Offline</p>
+
+            <input type="text" id="pair" placeholder="Enter Pair (e.g. BTCUSDT, SOLUSDT, ETHUSDT)">
+            <button onclick="fetchUltraSignal()">RUN 250-DAY DEEP SCAN</button>
+            <button id="autoBtn" onclick="toggleAuto()" style="background:#2b3139; color:white; border: 1px solid #474d57;">ENABLE AUTO-PILOT</button>
+            <p id="auto-status">Automatic Monitoring: OFF</p>
+        </div>
     </div>
 
     <script>
-        function analyze() {
-            let market = document.getElementById('marketSelect').value;
-            document.getElementById('signal').innerText = "ANALYZING...";
-            fetch(`/get_signal?market=${market}`)
-                .then(res => res.json())
-                .then(data => {
-                    document.getElementById('signal').innerText = data.signal;
-                    document.getElementById('rsi-display').innerText = "RSI: " + data.rsi;
-                });
+        let autoOn = false;
+        let job;
+
+        async function fetchUltraSignal() {
+            let pair = document.getElementById('pair').value || 'BTCUSDT';
+            document.getElementById('signal-display').innerText = "SCANNING...";
+            
+            const res = await fetch(`/get_signal?market=${pair}`);
+            const d = await res.json();
+            
+            document.getElementById('signal-display').innerText = d.signal;
+            document.getElementById('accuracy').innerText = d.accuracy;
+            document.getElementById('price').innerText = d.price;
+            document.getElementById('trend').innerText = d.trend;
+            document.getElementById('message').innerText = d.message;
+
+            const sig = document.getElementById('signal-display');
+            if(d.signal.includes("BUY")) sig.style.color = "#0ecb81";
+            else if(d.signal.includes("SELL")) sig.style.color = "#f6465d";
+            else sig.style.color = "#eaecef";
+        }
+
+        function toggleAuto() {
+            autoOn = !autoOn;
+            const btn = document.getElementById('autoBtn');
+            const status = document.getElementById('auto-status');
+            if(autoOn) {
+                btn.innerText = "STOP AUTO-PILOT";
+                btn.style.borderColor = "#f6465d";
+                status.innerText = "Automatic Monitoring: ACTIVE (Every 15s)";
+                job = setInterval(fetchUltraSignal, 15000);
+            } else {
+                btn.innerText = "ENABLE AUTO-PILOT";
+                btn.style.borderColor = "#474d57";
+                status.innerText = "Automatic Monitoring: OFF";
+                clearInterval(job);
+            }
         }
     </script>
 </body>
