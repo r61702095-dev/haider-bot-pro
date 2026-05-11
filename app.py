@@ -18,6 +18,10 @@ SIGNAL_HISTORY = []  # stores last 20 signals
 WINS = 0
 LOSSES = 0
 
+# Caches and background tasks for fast responses
+MODEL_CACHE = {}   # key: (symbol, interval) -> {'model':..., 'scaler':..., 'acc':...,'ts':...}
+ACCURACY_CACHE = {}  # key: (symbol, interval) -> {'accuracy': int, 'ts':...}
+
 # Auth token: use env var AUTH_TOKEN or generate a file-local token
 AUTH_TOKEN = os.environ.get('AUTH_TOKEN')
 TOKEN_FILE = os.path.join(os.path.dirname(__file__), 'auth_token.txt')
@@ -356,6 +360,12 @@ def estimate_historical_accuracy(symbol, interval='1d', lookback=200):
     """Estimate accuracy by backtesting the signal logic over historical candles.
     This is a simple directional next-candle test and is only an estimate.
     """
+    cache_key = (symbol.upper(), interval)
+    # return cached value if fresh (< 6 hours)
+    cached = ACCURACY_CACHE.get(cache_key)
+    if cached and (datetime.utcnow() - cached['ts']).total_seconds() < 6*3600:
+        return cached['accuracy']
+
     try:
         df = fetch_klines(symbol, interval=interval, limit=lookback+50)
         if df is None or len(df) < 50:
@@ -366,10 +376,8 @@ def estimate_historical_accuracy(symbol, interval='1d', lookback=200):
         # start after indicators have warmed up
         start = 50
         for i in range(start, len(df)-1):
-            # build signal at index i using data up to i
             sub = df.iloc[:i+1].copy()
             last = sub.iloc[-1]
-            # compute same conditions
             candle_momentum = (last['close'] - last['open']) / last['open'] if last['open'] != 0 else 0
             conds = [
                 last['close'] > last['ema_250'],
@@ -397,7 +405,6 @@ def estimate_historical_accuracy(symbol, interval='1d', lookback=200):
             else:
                 continue
 
-            # evaluate next candle
             next_close = df['close'].iloc[i+1]
             cur_close = last['close']
             total += 1
@@ -408,7 +415,9 @@ def estimate_historical_accuracy(symbol, interval='1d', lookback=200):
 
         if total == 0:
             return None
-        return int((wins/total)*100)
+        acc = int((wins/total)*100)
+        ACCURACY_CACHE[cache_key] = {'accuracy': acc, 'ts': datetime.utcnow()}
+        return acc
     except Exception:
         return None
 
@@ -420,11 +429,16 @@ def train_or_load_model(symbol, interval='1d'):
     model_path = os.path.join(model_dir, f"model_{symbol.upper()}_{interval}.pkl")
     scaler_path = os.path.join(model_dir, f"scaler_{symbol.upper()}_{interval}.pkl")
 
-    # if exists, load
+    # if exists in disk or cache, load
+    cache_key = (symbol.upper(), interval)
+    if cache_key in MODEL_CACHE:
+        entry = MODEL_CACHE[cache_key]
+        return entry.get('model'), entry.get('scaler'), entry.get('acc')
     if os.path.exists(model_path) and os.path.exists(scaler_path):
         try:
             model = joblib.load(model_path)
             scaler = joblib.load(scaler_path)
+            MODEL_CACHE[cache_key] = {'model': model, 'scaler': scaler, 'acc': None, 'ts': datetime.utcnow()}
             return model, scaler, None
         except Exception:
             pass
@@ -462,6 +476,7 @@ def train_or_load_model(symbol, interval='1d'):
         acc = model.score(X_test, y_test)
         joblib.dump(model, model_path)
         joblib.dump(scaler, scaler_path)
+        MODEL_CACHE[cache_key] = {'model': model, 'scaler': scaler, 'acc': float(acc*100), 'ts': datetime.utcnow()}
         return model, scaler, float(acc*100)
     except Exception:
         return None, None, None
@@ -483,36 +498,45 @@ def get_signal():
 
     payload = build_signal(df, market, timeframe)
     payload['history'] = SIGNAL_HISTORY
-    # ML model: train/load and get a probability for next candle
+    # Try to use cached model quickly
     try:
-        model, scaler, ml_acc = train_or_load_model(market, interval=interval)
-        if model is not None and scaler is not None:
-            # prepare latest features
-            d = df.copy()
-            last = d.iloc[-1]
-            feat = pd.DataFrame({
-                'rsi': [last['rsi']],
-                'ema20': [last['ema20']],
-                'ema50': [last['ema50']],
-                'macd': [last['macd']],
-                'vol': [last['volume']],
-                'vol_ma': [last['vol_ma']],
-                'mom': [(last['close'] - last['open'])/last['open'] if last['open']!=0 else 0]
-            })
-            Xs = scaler.transform(feat)
-            prob = float(model.predict_proba(Xs)[0][1])
-            payload['ml_proba'] = round(prob, 4)
-            payload['ml_accuracy'] = f"{int(ml_acc)}%" if ml_acc is not None else None
-            # if model high confidence, boost/override
-            if prob > 0.8:
-                # prefer BUY if prob>0.8, else SELL if prob<0.2
-                payload['ml_signal'] = 'BUY' if prob > 0.5 else 'SELL'
+        cache_key = (market.upper(), interval)
+        model_entry = MODEL_CACHE.get(cache_key)
+        if model_entry:
+            model = model_entry.get('model')
+            scaler = model_entry.get('scaler')
+            ml_acc = model_entry.get('acc')
+            if model and scaler:
+                last = df.iloc[-1]
+                feat = pd.DataFrame({
+                    'rsi': [last['rsi']],
+                    'ema20': [last['ema20']],
+                    'ema50': [last['ema50']],
+                    'macd': [last['macd']],
+                    'vol': [last['volume']],
+                    'vol_ma': [last['vol_ma']],
+                    'mom': [(last['close'] - last['open'])/last['open'] if last['open']!=0 else 0]
+                })
+                Xs = scaler.transform(feat)
+                prob = float(model.predict_proba(Xs)[0][1])
+                payload['ml_proba'] = round(prob, 4)
+                payload['ml_accuracy'] = f"{int(ml_acc)}%" if ml_acc is not None else None
                 if prob > 0.85:
+                    payload['ml_signal'] = 'BUY' if prob > 0.5 else 'SELL'
                     payload['signal'] = payload['ml_signal']
                     payload['reason'] = 'ML ensemble override (high confidence)'
                     payload['confidence'] = int(max(payload.get('confidence',50), int(prob*100)))
-            else:
-                payload['ml_signal'] = 'BUY' if prob > 0.5 else 'SELL'
+                else:
+                    payload['ml_signal'] = 'BUY' if prob > 0.5 else 'SELL'
+        else:
+            # spawn background model training if not in cache
+            from threading import Thread
+            def background_train():
+                try:
+                    train_or_load_model(market, interval=interval)
+                except Exception:
+                    pass
+            Thread(target=background_train, daemon=True).start()
     except Exception:
         pass
     # attach estimated historical accuracy when possible
