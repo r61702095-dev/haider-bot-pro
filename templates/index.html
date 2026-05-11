@@ -1,96 +1,247 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>haider trading bot v6.0</title>
-    <style>
-        :root { --accent: #f0b90b; --bg: #0b0e11; --card: #1e2329; }
-        body { 
-            background: var(--bg); 
-            color: #eaecef; 
-            font-family: 'Segoe UI', Roboto, sans-serif; 
-            margin: 0; 
-            padding: 15px; 
-            display: flex;
-            justify-content: center;
-        }
-        .container { 
-            width: 100%; 
-            max-width: 480px; /* Mobile par perfect look ke liye */
-            margin-top: 10px;
-        }
-        .dashboard { 
-            background: var(--card); 
-            border-radius: 16px; 
-            padding: 20px; 
-            box-shadow: 0 10px 40px rgba(0,0,0,0.5); 
-            border: 1px solid #474d57;
-            width: 100%;
-            box-sizing: border-box;
-        }
-        <div class="dashboard">
-            <div class="status-header">
-                <h2 style="margin:0;">🏦 PRO ULTRA v6.0</h2>
-                <div id="trend-label" style="color:#00ff00;">SCANNING 250-DAY...</div>
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>PRO ULTRA v6.0 — Haider Trading Bot</title>
+        <link rel="stylesheet" href="/static/style.css">
+    </head>
+    <body>
+        <div class="container">
+            <div class="dashboard">
+                <header class="header">
+                    <h1>PRO ULTRA v6.0</h1>
+                    <div class="sub">Haider Trading Bot</div>
+                </header>
+
+                <section class="signal-area">
+                    <div class="signal-top">
+                        <div id="signal-box" class="signal-box">STANDBY</div>
+                        <div id="signal-light" class="signal-light" title="Analysis status"></div>
+                    </div>
+                    <div class="grid">
+                        <div class="card">
+                            <small>Accuracy</small>
+                            <div id="accuracy">--</div>
+                        </div>
+                        <div class="card">
+                            <small>Live Price</small>
+                            <div id="price">--</div>
+                        </div>
+                        <div class="card">
+                            <small>250D Trend</small>
+                            <div id="trend">--</div>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="controls">
+                    <div class="row">
+                        <select id="broker">
+                            <option value="Binance">Binance</option>
+                            <option value="Quotex">Quotex</option>
+                            <option value="Bybit">Bybit</option>
+                            <option value="Deribit">Deribit</option>
+                            <option value="Simulated">Simulated</option>
+                        </select>
+                        <input id="pair-input" placeholder="Custom pair (e.g. SOLUSDT)" />
+                    </div>
+
+                    <div class="row">
+                        <select id="market">
+                            <option>BTCUSDT</option>
+                            <option>ETHUSDT</option>
+                            <option>EURUSD</option>
+                            <option>GBPUSD</option>
+                            <option>USDJPY</option>
+                        </select>
+                        <select id="timeframe">
+                            <option value="15s">15s</option>
+                            <option value="30s">30s</option>
+                            <option value="1m">1m</option>
+                            <option value="5m">5m</option>
+                            <option value="1d">1d</option>
+                        </select>
+                    </div>
+
+                    <div class="row">
+                        <button id="gen">Generate Signal</button>
+                        <button id="auto">Auto-Pilot</button>
+                        <button id="autotrade">Auto-Trade: OFF</button>
+                        <button id="tradeNow">Trade Now</button>
+                        <button id="settoken">Set API Key</button>
+                    </div>
+
+                    <div class="status-row">
+                        <div id="countdown">--</div>
+                        <div id="note">Estimated accuracy: <span id="historical-acc">--</span> — Educational tool only - not financial advice</div>
+                    </div>
+                </section>
+
+                <section class="details">
+                    <div class="indicators">
+                        <div>RSI: <span id="rsi">--</span></div>
+                        <div>EMA20: <span id="ema20">--</span></div>
+                        <div>EMA50: <span id="ema50">--</span></div>
+                        <div>MACD: <span id="macd">--</span></div>
+                           <div>Confidence: <span id="confidence">--</span></div>
+                    </div>
+
+                    <div class="history">
+                        <h3>Signal History</h3>
+                        <table id="history-table">
+                            <thead><tr><th>Time</th><th>Market</th><th>TF</th><th>Signal</th><th>Acc</th></tr></thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                </section>
             </div>
-
-            <div id="signal-display" class="signal-box">STANDBY</div>
-
-            <div class="grid-info">
-                <div class="info-item"><small>ACCURACY</small><br><b id="accuracy">--</b></div>
-                <div class="info-item"><small>LIVE PRICE</small><br><b id="price">--</b></div>
-                <div class="info-item"><small>250D TREND</small><br><b id="trend">--</b></div>
-            </div>
-
-            <p id="message" style="color: #848e9c;">Institutional Analysis: Offline</p>
-
-            <input type="text" id="pair" placeholder="Enter Pair (e.g. BTCUSDT, SOLUSDT, ETHUSDT)">
-            <button onclick="fetchUltraSignal()">RUN 250-DAY DEEP SCAN</button>
-            <button id="autoBtn" onclick="toggleAuto()" style="background:#2b3139; color:white; border: 1px solid #474d57;">ENABLE AUTO-PILOT</button>
-            <p id="auto-status">Automatic Monitoring: OFF</p>
         </div>
-    </div>
 
-    <script>
-        let autoOn = false;
-        let job;
+        <audio id="ping" src="/static/ping.mp3" preload="auto"></audio>
 
-        async function fetchUltraSignal() {
-            let pair = document.getElementById('pair').value || 'BTCUSDT';
-            document.getElementById('signal-display').innerText = "SCANNING...";
-            
-            const res = await fetch(`/get_signal?market=${pair}`);
-            const d = await res.json();
-            
-            document.getElementById('signal-display').innerText = d.signal;
-            document.getElementById('accuracy').innerText = d.accuracy;
-            document.getElementById('price').innerText = d.price;
-            document.getElementById('trend').innerText = d.trend;
-            document.getElementById('message').innerText = d.message;
+        <script>
+            let autoId = null;
+            let refreshInterval = 15000; // default 15s
+            let autoTradeOn = false;
 
-            const sig = document.getElementById('signal-display');
-            if(d.signal.includes("BUY")) sig.style.color = "#0ecb81";
-            else if(d.signal.includes("SELL")) sig.style.color = "#f6465d";
-            else sig.style.color = "#eaecef";
-        }
-
-        function toggleAuto() {
-            autoOn = !autoOn;
-            const btn = document.getElementById('autoBtn');
-            const status = document.getElementById('auto-status');
-            if(autoOn) {
-                btn.innerText = "STOP AUTO-PILOT";
-                btn.style.borderColor = "#f6465d";
-                status.innerText = "Automatic Monitoring: ACTIVE (Every 15s)";
-                job = setInterval(fetchUltraSignal, 15000);
-            } else {
-                btn.innerText = "ENABLE AUTO-PILOT";
-                btn.style.borderColor = "#474d57";
-                status.innerText = "Automatic Monitoring: OFF";
-                clearInterval(job);
+            function chosenMarket(){
+                const custom = document.getElementById('pair-input').value.trim();
+                return custom || document.getElementById('market').value;
             }
-        }
-    </script>
-</body>
+
+            function setSignalLight(color){
+                const light = document.getElementById('signal-light');
+                light.style.background = color || 'transparent';
+            }
+
+            async function doAutoTradeIfNeeded(payload){
+                if(!autoTradeOn) return;
+                if(payload.signal !== 'BUY' && payload.signal !== 'SELL') return;
+                const broker = document.getElementById('broker').value || 'Simulated';
+                const tradeBody = { market: payload.market, broker: broker, action: payload.signal, amount: 1 };
+                try{
+                    const headers = {'Content-Type':'application/json'};
+                    const tok = localStorage.getItem('AUTH_TOKEN');
+                    if(tok) headers['X-AUTH-TOKEN'] = tok;
+                    await fetch('/trade', { method:'POST', headers: headers, body: JSON.stringify(tradeBody) });
+                }catch(e){console.error('auto-trade failed', e)}
+            }
+
+            async function fetchSignal(playSound=true){
+                const market = chosenMarket();
+                const tf = document.getElementById('timeframe').value;
+                const box = document.getElementById('signal-box');
+                box.innerText = 'SCANNING...';
+                setSignalLight('#ffc107');
+
+                try{
+                    const res = await fetch(`/get_signal?market=${market}&timeframe=${tf}`);
+                    const data = await res.json();
+                    if(data.error){ box.innerText = 'ERROR'; setSignalLight('#6c757d'); return; }
+
+                    box.innerText = data.signal;
+                    document.getElementById('accuracy').innerText = data.accuracy;
+                    document.getElementById('price').innerText = data.price;
+                    document.getElementById('trend').innerText = data.ema250 ? (data.price > data.ema250 ? 'Bullish' : 'Bearish') : '--';
+                    document.getElementById('rsi').innerText = data.rsi;
+                    document.getElementById('ema20').innerText = data.ema20;
+                    document.getElementById('ema50').innerText = data.ema50;
+                    document.getElementById('macd').innerText = data.macd;
+
+                    // color + light
+                    if(data.signal === 'BUY'){ box.style.background = '#073b2b'; setSignalLight('#00ff8a'); }
+                    else if(data.signal === 'SELL'){ box.style.background = '#3b0a0f'; setSignalLight('#ff4d61'); }
+                    else { box.style.background = '#24292e'; setSignalLight('#f0b90b'); }
+
+                    // history table
+                    const tbody = document.querySelector('#history-table tbody');
+                    tbody.innerHTML = '';
+                    (data.history||[]).forEach(h=>{
+                        const tr = document.createElement('tr');
+                        tr.innerHTML = `<td>${new Date(h.timestamp).toLocaleString()}</td><td>${h.market||''}</td><td>${h.timeframe||''}</td><td>${h.signal||h.action||''}</td><td>${h.accuracy||''}</td>`;
+                        tbody.appendChild(tr);
+                    });
+
+                    if(playSound && (data.signal==='BUY' || data.signal==='SELL')){
+                        const ping = document.getElementById('ping');
+                        try{ ping.play(); }catch(e){}
+                    }
+
+                    // set color classes for accuracy/confidence
+                    function colorClass(v){
+                        if(v>=80) return 'green';
+                        if(v>=65) return 'yellow';
+                        return 'red';
+                    }
+                    const accEl = document.getElementById('accuracy');
+                    const confEl = document.getElementById('confidence');
+                    const histEl = document.getElementById('historical-acc');
+                    // parse numeric values
+                    const accNum = parseInt((data.accuracy||'0').toString().replace('%','')) || 0;
+                    const confNum = data.confidence || accNum;
+                    accEl.className = 'value ' + colorClass(accNum);
+                    confEl.className = 'value ' + colorClass(confNum);
+                    if(data.historical_accuracy){
+                        const hn = parseInt(data.historical_accuracy.toString().replace('%','')) || 0;
+                        histEl.className = 'value ' + colorClass(hn);
+                    }
+
+                          // confidence and SR note
+                          document.getElementById('confidence').innerText = data.confidence !== undefined ? data.confidence + '%' : '--';
+                          if(data.sr_note) document.getElementById('note').innerText = data.sr_note + ' — Educational tool only - not financial advice';
+                          if(data.historical_accuracy) document.getElementById('historical-acc').innerText = data.historical_accuracy;
+                    // attempt auto-trade
+                    await doAutoTradeIfNeeded(data);
+
+                }catch(err){
+                    console.error(err);
+                    box.innerText = 'NETWORK ERROR';
+                    setSignalLight('#6c757d');
+                }
+            }
+
+            document.getElementById('gen').addEventListener('click', ()=>fetchSignal(true));
+            document.getElementById('auto').addEventListener('click', ()=>{
+                if(autoId){ clearInterval(autoId); autoId=null; document.getElementById('auto').innerText='Auto-Pilot'; document.getElementById('countdown').innerText='Auto: OFF'; }
+                else { autoId = setInterval(()=>fetchSignal(true), refreshInterval); document.getElementById('auto').innerText='Stop Auto'; document.getElementById('countdown').innerText='Auto: ON'; fetchSignal(false); }
+            });
+
+            document.getElementById('autotrade').addEventListener('click', ()=>{
+                autoTradeOn = !autoTradeOn;
+                document.getElementById('autotrade').innerText = autoTradeOn ? 'Auto-Trade: ON' : 'Auto-Trade: OFF';
+                document.getElementById('autotrade').style.background = autoTradeOn ? '#ff6b6b' : 'var(--accent)';
+            });
+
+            // API token handling
+            document.getElementById('settoken').addEventListener('click', ()=>{
+                const t = prompt('Enter API token for /trade (you can find auth_token.txt in project folder):');
+                if(t){ localStorage.setItem('AUTH_TOKEN', t); alert('Token saved to browser localStorage'); }
+            });
+
+            document.getElementById('tradeNow').addEventListener('click', async ()=>{
+                const market = chosenMarket();
+                const broker = document.getElementById('broker').value || 'Simulated';
+                const action = prompt('Enter action to execute (BUY or SELL):', 'BUY');
+                if(!action) return;
+                const body = { market: market, broker: broker, action: action.toUpperCase(), amount: 1 };
+                const headers = {'Content-Type':'application/json'};
+                const tok = localStorage.getItem('AUTH_TOKEN');
+                if(tok) headers['X-AUTH-TOKEN'] = tok;
+                try{
+                    const res = await fetch('/trade', { method:'POST', headers: headers, body: JSON.stringify(body) });
+                    const j = await res.json();
+                    alert('Trade response: ' + JSON.stringify(j));
+                }catch(e){ alert('Trade failed: '+e); }
+            });
+
+            // Simple countdown timer
+            setInterval(()=>{
+                if(autoId){ document.getElementById('countdown').innerText = 'Next in: ' + Math.ceil((refreshInterval/1000)); }
+            },1000);
+
+            // initial
+            fetchSignal(false);
+        </script>
+    </body>
 </html>

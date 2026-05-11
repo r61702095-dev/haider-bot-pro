@@ -1,0 +1,40 @@
+:root{--accent:#f0b90b;--bg:#0b0e11;--card:#1e2329;--muted:#848e9c}
+*{box-sizing:border-box}
+body{background:var(--bg);color:#e6eef2;font-family:Inter,Segoe UI,Roboto,system-ui,Arial;margin:0;padding:20px;display:flex;justify-content:center}
+.container{width:95%;max-width:500px;margin:8px}
+.dashboard{background:var(--card);border-radius:12px;padding:16px;border:1px solid #2f353c;box-shadow:0 8px 30px rgba(0,0,0,0.6)}
+.header h1{margin:0;font-size:20px}
+.header .sub{color:var(--muted);font-size:12px}
+.signal-area{margin-top:12px}
+.signal-box{padding:18px;border-radius:10px;background:#24292e;color:#fff;text-align:center;font-weight:700;font-size:18px}
+.signal-top{display:flex;align-items:center;gap:12px}
+.signal-light{width:16px;height:16px;border-radius:50%;background:transparent;border:2px solid rgba(255,255,255,0.06)}
+.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:12px}
+.card{background:rgba(255,255,255,0.02);padding:10px;border-radius:8px;text-align:center}
+.card .value.green{color:#0ecb81}
+.card .value.yellow{color:#f0b90b}
+.card .value.red{color:#ff6b6b}
+.card small{color:var(--muted)}
+.controls{margin-top:14px}
+.row{display:flex;gap:8px}
+select{flex:1;padding:10px;border-radius:8px;border:1px solid #2f353c;background:#0f1316;color:#e8eef2}
+button{padding:10px 12px;border-radius:8px;border:0;background:var(--accent);color:#111;font-weight:600}
+input#pair-input{flex:1;padding:10px;border-radius:8px;border:1px solid #2f353c;background:#0f1316;color:#e8eef2}
+select#broker{flex:1;padding:10px;border-radius:8px;border:1px solid #2f353c;background:#0f1316;color:#e8eef2}
+.row button#autotrade{background:var(--accent)}
+.status-row{display:flex;justify-content:space-between;margin-top:8px;color:var(--muted);font-size:13px}
+.details{margin-top:14px}
+.indicators{display:flex;gap:12px;flex-wrap:wrap;color:var(--muted)}
+.history{margin-top:8px}
+table{width:100%;border-collapse:collapse;color:#d8e0e6;font-size:13px}
+thead th{color:var(--muted);text-align:left;padding:6px}
+tbody td{padding:6px;border-top:1px solid rgba(255,255,255,0.02)}
+
+.confidence{display:flex;align-items:center;gap:8px}
+.confidence .bar{height:10px;background:#222;border-radius:6px;overflow:hidden;width:140px}
+.confidence .fill{height:100%;background:linear-gradient(90deg,#0ecb81,#f0b90b);width:0%}
+
+@media(min-width:760px){.container{max-width:700px}}
+
+/* Accessibility */
+button:focus,select:focus{outline:2px solid rgba(240,185,11,0.25)}
