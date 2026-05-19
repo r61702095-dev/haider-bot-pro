@@ -1,7 +1,7 @@
 :root{--accent:#f0b90b;--bg:#0b0e11;--card:#1e2329;--muted:#848e9c}
 *{box-sizing:border-box}
 body{background:var(--bg);color:#e6eef2;font-family:Inter,Segoe UI,Roboto,system-ui,Arial;margin:0;padding:20px;display:flex;justify-content:center}
-.container{width:95%;max-width:500px;margin:8px}
+.container{width:95%;max-width:900px;margin:8px}
 .dashboard{background:var(--card);border-radius:12px;padding:16px;border:1px solid #2f353c;box-shadow:0 8px 30px rgba(0,0,0,0.6)}
 .header h1{margin:0;font-size:20px}
 .header .sub{color:var(--muted);font-size:12px}
@@ -22,6 +22,8 @@ button{padding:10px 12px;border-radius:8px;border:0;background:var(--accent);col
 input#pair-input{flex:1;padding:10px;border-radius:8px;border:1px solid #2f353c;background:#0f1316;color:#e8eef2}
 select#broker{flex:1;padding:10px;border-radius:8px;border:1px solid #2f353c;background:#0f1316;color:#e8eef2}
 .row button#autotrade{background:var(--accent)}
+input#autobot-amount, input#autobot-interval, input#autobot-minconf{padding:8px;border-radius:8px;border:1px solid #2f353c;background:#0f1316;color:#e8eef2;width:120px}
+.small{font-size:13px;color:var(--muted);display:flex;align-items:center;gap:6px}
 .status-row{display:flex;justify-content:space-between;margin-top:8px;color:var(--muted);font-size:13px}
 .details{margin-top:14px}
 .indicators{display:flex;gap:12px;flex-wrap:wrap;color:var(--muted)}
@@ -35,6 +37,9 @@ tbody td{padding:6px;border-top:1px solid rgba(255,255,255,0.02)}
 .confidence .fill{height:100%;background:linear-gradient(90deg,#0ecb81,#f0b90b);width:0%}
 
 @media(min-width:760px){.container{max-width:700px}}
+
+#chart{border-radius:8px;border:1px solid #23282d;background:linear-gradient(180deg,#0e1114,#0b0e11);margin-top:12px}
+.broker-status{align-self:center;padding:6px 8px;border-radius:8px;background:rgba(255,255,255,0.02);color:var(--muted);font-size:13px;margin-left:8px}
 
 /* Accessibility */
 button:focus,select:focus{outline:2px solid rgba(240,185,11,0.25)}
