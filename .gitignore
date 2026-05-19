@@ -1,0 +1,39 @@
+# Byte-compiled / cache
+__pycache__/
+*.py[cod]
+*.pyo
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# Editor directories
+.vscode/
+.idea/
+
+# Logs
+*.log
+haiderbot.log
+log-*.txt
+
+# Runtime files
+trades_log.jsonl
+broker_config.json
+sessions/
+
+# Models / large artifacts
+models/*.pkl
+models/*.joblib
+
+# System files
+.DS_Store
+Thumbs.db
+
+# Python packaging
+dist/
+build/
+*.egg-info/
+
+# Node / frontend
+node_modules/

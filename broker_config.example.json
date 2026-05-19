@@ -1,0 +1,15 @@
+{
+  "QUOTEX": {
+    "url": "https://api.quotex.io/api",
+    "key": "<YOUR_QUOTEX_KEY>",
+    "secret": "<YOUR_QUOTEX_SECRET>",
+    "use_client": true,
+    "is_demo": true
+  },
+  "BINANCE": {
+    "url": "https://api.binance.com",
+    "key": "<YOUR_BINANCE_KEY>",
+    "secret": "<YOUR_BINANCE_SECRET>"
+  },
+  "allow_simulation": false
+}
