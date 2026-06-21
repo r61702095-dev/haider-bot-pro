@@ -191,4 +191,4 @@ DEFAULT_HEADERS: Dict[str, str] = {
     "Origin": "https://qxbroker.com",
     "Referer": "https://qxbroker.com/",
     "Accept-Language": "en-US,en;q=0.9",
-}
+} 

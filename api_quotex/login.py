@@ -16,6 +16,7 @@ from playwright.async_api import async_playwright, TimeoutError as PlaywrightTim
 from .config import Config
 from .monitoring import error_monitor, ErrorSeverity, ErrorCategory
 from .constants import REGIONS
+from .utils import format_session_id
 
 logger.remove()
 log_filename = f"log-{time.strftime('%Y-%m-%d')}.txt"
@@ -278,6 +279,49 @@ async def get_ssid(email: str = None, password: str = None, email_pass: str = No
       3) Use Cloudscraper first, fall back to Playwright if it fails.
       4) Save new session.json after successful login.
     """
+    # Quick override: attempt to use broker_config.json or QUOTEX_SSID env var
+    try:
+        root = Path(__file__).resolve().parents[1]
+        broker_cfg_path = root / "broker_config.json"
+        if broker_cfg_path.exists():
+            try:
+                with open(broker_cfg_path, "r", encoding="utf-8") as f:
+                    bc = json.load(f)
+                q = bc.get("QUOTEX", {}) if isinstance(bc, dict) else {}
+                ssid_source = q.get("ssid") or q.get("session") or q.get("token") or os.environ.get("QUOTEX_SSID")
+                if not ssid_source:
+                    ck = q.get("cookies") or q.get("cookie")
+                    if ck and isinstance(ck, str):
+                        parts = [p.strip() for p in ck.split(";") if p.strip()]
+                        for p in parts:
+                            if "=" not in p:
+                                continue
+                            k, v = p.split("=", 1)
+                            if k.strip().lower() in ("session", "ssid", "qx_session") and v.strip():
+                                ssid_source = v.strip()
+                                break
+                if ssid_source:
+                    # normalize into full SSID frame
+                    full_ssid = ssid_source if str(ssid_source).startswith('42[') else format_session_id(str(ssid_source), is_demo=is_demo)
+                    session_data = {"ssid": full_ssid, "cookies": q.get("cookies"), "user_agent": q.get("user_agent"), "is_demo": q.get("is_demo", is_demo)}
+                    # If simulation is allowed in broker config, skip validation and use it
+                    if bc.get("allow_simulation"):
+                        save_session(session_data)
+                        logger.info("Using SSID from broker_config.json (simulation allowed)")
+                        return True, session_data
+                    # otherwise try lightweight validation
+                    try:
+                        if await validate_ssid(full_ssid):
+                            save_session(session_data)
+                            logger.info("Using SSID from broker_config.json (validated)")
+                            return True, session_data
+                    except Exception:
+                        pass
+            except Exception:
+                pass
+    except Exception:
+        pass
+
     # Step 1: Check existing session
     session_data = load_session()
     if session_data and SESSION_FILE.exists():
