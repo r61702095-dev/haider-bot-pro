@@ -11,4 +11,3 @@ cloudscraper==1.2.70
 beautifulsoup4==4.12.2
 playwright==1.36.0
 pandas==2.0.3
-pandas-ta==0.3.14b
