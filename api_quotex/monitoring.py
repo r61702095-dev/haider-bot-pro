@@ -6,11 +6,20 @@ from datetime import datetime, timedelta
 from dataclasses import dataclass
 from enum import Enum
 from collections import defaultdict, deque
-from loguru import logger
-
-logger.remove()
-log_filename = f"log-{time.strftime('%Y-%m-%d')}.txt"
-logger.add(log_filename, level="INFO", encoding="utf-8", backtrace=True, diagnose=True)
+try:
+    from loguru import logger
+    logger.remove()
+    log_filename = f"log-{time.strftime('%Y-%m-%d')}.txt"
+    logger.add(log_filename, level="INFO", encoding="utf-8", backtrace=True, diagnose=True)
+except Exception:
+    import logging
+    logger = logging.getLogger("api_quotex.monitoring")
+    if not logger.handlers:
+        handler = logging.StreamHandler()
+        formatter = logging.Formatter("%(asctime)s %(levelname)s %(name)s: %(message)s")
+        handler.setFormatter(formatter)
+        logger.addHandler(handler)
+    logger.setLevel(logging.INFO)
 
 class ErrorSeverity(Enum):
     LOW = "low"

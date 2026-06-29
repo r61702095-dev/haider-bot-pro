@@ -5,11 +5,27 @@ import json
 import time
 import re
 import requests
-import cloudscraper
-from loguru import logger
+try:
+    import cloudscraper
+except Exception:
+    cloudscraper = None
+try:
+    from loguru import logger
+except Exception:
+    import logging
+    logger = logging.getLogger("api_quotex.login")
+    if not logger.handlers:
+        handler = logging.StreamHandler()
+        formatter = logging.Formatter("%(asctime)s %(levelname)s %(name)s: %(message)s")
+        handler.setFormatter(formatter)
+        logger.addHandler(handler)
+    logger.setLevel(logging.INFO)
 from pathlib import Path
 from typing import Dict, Tuple, Any, Optional
-from bs4 import BeautifulSoup
+try:
+    from bs4 import BeautifulSoup
+except Exception:
+    BeautifulSoup = None
 
 from playwright.async_api import async_playwright, TimeoutError as PlaywrightTimeoutError
 
@@ -17,10 +33,6 @@ from .config import Config
 from .monitoring import error_monitor, ErrorSeverity, ErrorCategory
 from .constants import REGIONS
 from .utils import format_session_id
-
-logger.remove()
-log_filename = f"log-{time.strftime('%Y-%m-%d')}.txt"
-logger.add(log_filename, level="INFO", encoding="utf-8", backtrace=True, diagnose=True)
 
 SESSION_DIR = Path("sessions")
 SESSION_FILE = SESSION_DIR / "session.json"

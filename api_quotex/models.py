@@ -2,7 +2,17 @@
 import time
 import uuid
 from typing import Optional, List
-from pydantic import BaseModel, Field
+try:
+    from pydantic import BaseModel, Field
+except Exception:
+    # Minimal fallback if pydantic is not installed
+    class BaseModel:
+        def __init__(self, **kwargs):
+            for k, v in kwargs.items():
+                setattr(self, k, v)
+
+    def Field(*a, **k):
+        return None
 from datetime import datetime
 from enum import Enum
 

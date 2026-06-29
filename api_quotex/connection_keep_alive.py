@@ -7,13 +7,19 @@ from collections import defaultdict
 from typing import Dict, List, Any, Callable, Optional, Union
 from websockets.exceptions import ConnectionClosed
 from datetime import datetime, timedelta
-from loguru import logger
+try:
+    from loguru import logger
+except Exception:
+    import logging
+    logger = logging.getLogger("api_quotex.connection_keep_alive")
+    if not logger.handlers:
+        handler = logging.StreamHandler()
+        formatter = logging.Formatter("%(asctime)s %(levelname)s %(name)s: %(message)s")
+        handler.setFormatter(formatter)
+        logger.addHandler(handler)
+    logger.setLevel(logging.INFO)
 from .monitoring import error_monitor, ErrorSeverity, ErrorCategory
 from .constants import REGIONS, CONNECTION_SETTINGS
-
-logger.remove()
-log_filename = f"log-{time.strftime('%Y-%m-%d')}.txt"
-logger.add(log_filename, level="INFO", encoding="utf-8", backtrace=True, diagnose=True)
 
 class ConnectionKeepAlive:
     def __init__(self, ssid: str, is_demo: bool = True):

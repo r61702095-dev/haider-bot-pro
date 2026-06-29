@@ -1,108 +1,36 @@
-"""Constants and configuration for the Quotex API."""
+"""Constants and configuration for the Quotex API.
+
+This is a trimmed, stable version used by the local bot runner. It defines a
+minimal ASSETS mapping and core connection/timeframe constants. For a full
+asset list you can replace `ASSETS` with the provider's full mapping.
+"""
 import time
 import random
-from loguru import logger
 from typing import List, Dict, Any, Optional
 
-logger.remove()
-log_filename = f"log-{time.strftime('%Y-%m-%d')}.txt"
-logger.add(log_filename, level="INFO", encoding="utf-8", backtrace=True, diagnose=True)
+try:
+    from loguru import logger
+    logger.remove()
+    log_filename = f"log-{time.strftime('%Y-%m-%d')}.txt"
+    logger.add(log_filename, level="INFO", encoding="utf-8", backtrace=True, diagnose=True)
+except Exception:
+    import logging
+    logger = logging.getLogger("api_quotex.constants")
+    if not logger.handlers:
+        handler = logging.StreamHandler()
+        formatter = logging.Formatter("%(asctime)s %(levelname)s %(name)s: %(message)s")
+        handler.setFormatter(formatter)
+        logger.addHandler(handler)
+    logger.setLevel(logging.INFO)
 
+# Minimal asset mapping (extend as needed)
 ASSETS: Dict[str, int] = {
-    "ADAUSD_otc": 376,
-    "APTUSD_otc": 377,
-    "ARBUSD_otc": 378,
-    "ATOUSD_otc": 368,
-    "AUDCAD": 36,
-    "AUDCAD_otc": 67,
-    "AUDCHF": 37,
-    "AUDCHF_otc": 68,
-    "AUDJPY": 38,
-    "AUDJPY_otc": 69,
-    "AUDNZD": 39,
-    "AUDNZD_otc": 70,
-    "AUDUSD": 40,
-    "AUDUSD_otc": 71,
-    "AXJAUD": 315,
-    "AXP_otc": 291,
-    "BA_otc": 292,
-    "BCHUSD_otc": 363,
-    "BNBUSD_otc": 362,
-    "BONUSD_otc": 358,
-    "BRLUSD_otc": 332,
-    "BTCUSD_otc": 352,
-    "CADCHF": 41,
-    "CADCHF_otc": 72,
-    "CADJPY": 42,
-    "CADJPY_otc": 73,
-    "CHFJPY": 43,
-    "CHFJPY_otc": 74,
-    "CHIA50": 328,
-    "DJIUSD": 317,
-    "DOGUSD_otc": 353,
-    "ETHUSD_otc": 360,
-    "EURAUD": 44,
-    "EURAUD_otc": 75,
-    "EURCAD": 45,
-    "EURCAD_otc": 76,
-    "EURCHF": 46,
-    "EURCHF_otc": 77,
-    "EURGBP": 47,
-    "EURGBP_otc": 78,
-    "EURJPY": 48,
-    "EURJPY_otc": 79,
-    "EURNZD": 49,
-    "EURNZD_otc": 80,
-    "EURSGD": 123,
-    "EURSGD_otc": 303,
     "EURUSD": 1,
-    "EURUSD_otc": 66,
-    "F40EUR": 318,
-    "FB_otc": 187,
-    "FLOUSD_otc": 356,
-    "FTSGBP": 319,
-    "GBPAUD": 51,
-    "GBPAUD_otc": 81,
-    "GBPCAD": 52,
-    "GBPCAD_otc": 82,
-    "GBPCHF": 53,
-    "GBPCHF_otc": 83,
-    "GBPJPY": 54,
-    "GBPJPY_otc": 84,
-    "GBPUSD": 56,
-    "GBPUSD_otc": 86,
-    "GEREUR": 316,
-    "HSIHKD": 320,
-    "IBXEUR": 321,
-    "INTC_otc": 190,
-    "IT4EUR": 326,
-    "JNJ_otc": 296,
-    "JPXJPY": 327,
-    "MCD_otc": 175,
-    "MSFT_otc": 176,
-    "NDXUSD": 322,
-    "NZDJPY": 58,
-    "NZDJPY_otc": 89,
-    "NZDUSD": 60,
-    "NZDUSD_otc": 90,
-    "PFE_otc": 297,
-    "SPXUSD": 323,
-    "STXEUR": 325,
-    "UKBrent_otc": 164,
-    "USCrude_otc": 165,
-    "USDCAD": 61,
-    "USDCAD_otc": 91,
-    "USDCHF": 62,
-    "USDCHF_otc": 92,
-    "USDJPY": 63,
-    "USDJPY_otc": 93,
-    "XAGUSD": 65,
-    "XAGUSD_otc": 167,
     "XAUUSD": 2,
-    "XAUUSD_otc": 169,
-    "XRPUSD_otc": 364,
-    "AVAUSD_otc": 379,
-    "AXSUSD_otc": 380,
+    "GBPUSD": 56,
+    "USDJPY": 63,
+    "BTCUSD": 352,
+    "ETHUSD": 360,
 }
 
 def update_assets_from_api(api_assets: List[Dict[str, Any]]) -> None:
@@ -123,13 +51,6 @@ class Regions:
     }
 
     @classmethod
-    def get_all(cls, randomize: bool = True) -> List[str]:
-        urls = list(cls._REGIONS.values())
-        if randomize:
-            random.shuffle(urls)
-        return urls
-
-    @classmethod
     def get_all_regions(cls) -> Dict[str, str]:
         return cls._REGIONS.copy()
 
@@ -137,26 +58,20 @@ class Regions:
     def get_region(cls, region_name: str) -> Optional[str]:
         return cls._REGIONS.get(region_name.upper())
 
-    @classmethod
-    def get_demo_regions(cls) -> List[str]:
-        return [url for name, url in cls._REGIONS.items() if "DEMO" in name]
-
 REGIONS = Regions()
 
 TIMEFRAMES: Dict[str, int] = {
+    "5s": 5,
+    "15s": 15,
     "30s": 30,
     "1m": 60,
-    "2m": 120,
-    "3m": 180,
     "5m": 300,
-    "10m": 600,
     "15m": 900,
     "30m": 1800,
-    "45m": 2700,
     "1h": 3600,
-    "2h": 7200,
-    "3h": 10800,
     "4h": 14400,
+    "1d": 86400,
+    "1w": 604800,
 }
 
 CONNECTION_SETTINGS: Dict[str, float] = {
@@ -169,8 +84,6 @@ CONNECTION_SETTINGS: Dict[str, float] = {
     "reconnect_factor": 1.8,
     "handshake_timeout": 10.0,
     "receive_timeout": 30.0,
-    "tick_interval": 15.0,
-    "message_timeout": 60.0,
 }
 
 API_LIMITS: Dict[str, float] = {
@@ -191,4 +104,4 @@ DEFAULT_HEADERS: Dict[str, str] = {
     "Origin": "https://qxbroker.com",
     "Referer": "https://qxbroker.com/",
     "Accept-Language": "en-US,en;q=0.9",
-} 
+}

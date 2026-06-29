@@ -1,10 +1,19 @@
 """Custom exceptions for the Quotex API"""
 import time
-from loguru import logger
-
-logger.remove()
-log_filename = f"log-{time.strftime('%Y-%m-%d')}.txt"
-logger.add(log_filename, level="INFO", encoding="utf-8", backtrace=True, diagnose=True)
+try:
+    from loguru import logger
+    logger.remove()
+    log_filename = f"log-{time.strftime('%Y-%m-%d')}.txt"
+    logger.add(log_filename, level="INFO", encoding="utf-8", backtrace=True, diagnose=True)
+except Exception:
+    import logging
+    logger = logging.getLogger("api_quotex.exceptions")
+    if not logger.handlers:
+        handler = logging.StreamHandler()
+        formatter = logging.Formatter("%(asctime)s %(levelname)s %(name)s: %(message)s")
+        handler.setFormatter(formatter)
+        logger.addHandler(handler)
+    logger.setLevel(logging.INFO)
 
 class QuotexError(Exception):
     def __init__(self, message: str, error_code: str = None):

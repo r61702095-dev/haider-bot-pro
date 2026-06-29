@@ -11,17 +11,26 @@ from typing import Any, Callable, Dict, List, Optional, Union
 
 import websockets
 from websockets.exceptions import ConnectionClosed, ConnectionClosedOK, ConnectionClosedError
-from loguru import logger
+try:
+    from loguru import logger
+    logger.remove()
+    log_filename = f"log-{time.strftime('%Y-%m-%d')}.txt"
+    logger.add(log_filename, level="INFO", encoding="utf-8", backtrace=True, diagnose=True)
+except Exception:
+    import logging
+    logger = logging.getLogger("api_quotex.websocket")
+    if not logger.handlers:
+        handler = logging.StreamHandler()
+        formatter = logging.Formatter("%(asctime)s %(levelname)s %(name)s: %(message)s")
+        handler.setFormatter(formatter)
+        logger.addHandler(handler)
+    logger.setLevel(logging.INFO)
 
 from .models import ConnectionInfo, ConnectionStatus, ServerTime
 from .constants import CONNECTION_SETTINGS, DEFAULT_HEADERS
 from .exceptions import WebSocketError, ConnectionError, Base64DecodeError
 from .monitoring import error_monitor, ErrorSeverity, ErrorCategory
 from .config import Config
-
-logger.remove()
-log_filename = f"log-{time.strftime('%Y-%m-%d')}.txt"
-logger.add(log_filename, level="INFO", encoding="utf-8", backtrace=True, diagnose=True)
 
 def _now_ms() -> int:
     """Return current time in milliseconds."""

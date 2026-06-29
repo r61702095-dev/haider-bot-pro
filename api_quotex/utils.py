@@ -6,11 +6,17 @@ from typing import List, Dict, Any, Optional
 from datetime import datetime, timedelta
 import pandas as pd
 from .models import Candle, OrderResult
-from loguru import logger
-
-logger.remove()
-log_filename = f"log-{time.strftime('%Y-%m-%d')}.txt"
-logger.add(log_filename, level="INFO", encoding="utf-8", backtrace=True, diagnose=True)
+try:
+    from loguru import logger
+except Exception:
+    import logging
+    logger = logging.getLogger("api_quotex.utils")
+    if not logger.handlers:
+        handler = logging.StreamHandler()
+        formatter = logging.Formatter("%(asctime)s %(levelname)s %(name)s: %(message)s")
+        handler.setFormatter(formatter)
+        logger.addHandler(handler)
+    logger.setLevel(logging.INFO)
 
 def format_session_id(session_id: str, is_demo: bool = True, is_fast_history: bool = True) -> str:
     import json

@@ -136,7 +136,8 @@ class Regions:
 REGIONS = Regions()
 
 TIMEFRAMES: Dict[str, int] = {
-    "30s": 30, "1m": 60, "5m": 300, "1h": 3600, "4h": 14400, "1d": 86400
+    "5s": 5, "15s": 15, "30s": 30, "1m": 60, "5m": 300, "15m": 900,
+    "30m": 1800, "1h": 3600, "4h": 14400, "1d": 86400, "1w": 604800
 }
 
 CONNECTION_SETTINGS: Dict[str, float] = {
@@ -931,16 +932,16 @@ def generate_signal(symbol, interval='1m', asset_type='CRYPTO', fast=False, dupl
         buy_score = (buy_signals / total_signals) * 100 if total_signals > 0 else 50
         sell_score = (sell_signals / total_signals) * 100 if total_signals > 0 else 50
 
+        # Use a more responsive threshold so the bot can generate actionable signals.
+        signal_threshold = 55 if fast else 60
         signal = 'WAIT'
-        confidence = 50
-        if buy_score > 65 and buy_score > sell_score:
+        confidence = int(max(buy_score, sell_score))
+        if buy_score >= signal_threshold and buy_score > sell_score:
             signal = 'BUY'
             confidence = min(95, int(buy_score))
-        elif sell_score > 65 and sell_score > buy_score:
+        elif sell_score >= signal_threshold and sell_score > buy_score:
             signal = 'SELL'
             confidence = min(95, int(sell_score))
-        else:
-            confidence = int(max(buy_score, sell_score))
 
         # Multi-timeframe confirmation
         mtf_bonus = 0
@@ -966,12 +967,17 @@ def generate_signal(symbol, interval='1m', asset_type='CRYPTO', fast=False, dupl
 
         confidence = int(max(0, min(100, (confidence or 0) + mtf_bonus)))
 
+        logger.debug(
+            "Signal calc %s %s: buy_signals=%.2f sell_signals=%.2f buy_score=%.1f sell_score=%.1f threshold=%s confidence=%s",
+            symbol, interval, buy_signals, sell_signals, buy_score, sell_score, signal_threshold, confidence
+        )
+
         # Default reason
         reason = f"Signal generated from {int(total_signals)} indicators (Buy: {buy_score:.1f}%, Sell: {sell_score:.1f}%)"
 
         # Duplicate suppression window
         if duplicate_window is None:
-            duplicate_window = 20 if fast else 60
+            duplicate_window = 10 if fast else 30
         try:
             if SIGNAL_HISTORY:
                 # check recent history (up to 3) for duplicate signals
@@ -1276,13 +1282,11 @@ def execute_trade():
         if not symbol or direction not in ['BUY', 'SELL', 'CALL', 'PUT']:
             return jsonify({'error': 'Invalid symbol or direction'}), 400
         
-        # Execute based on broker
-        if broker == 'binance':
-            result = execute_binance_trade(symbol, direction, amount, stop_loss=stop_loss, take_profit=take_profit, leverage=leverage, trade_type=trade_type)
-        elif broker == 'quotex':
-            result = execute_quotex_trade(symbol, direction, amount, expiration=expiration, stop_loss=stop_loss, take_profit=take_profit, leverage=leverage, trade_type=trade_type)
-        else:
-            result = execute_simulated_trade(symbol, direction, amount, stop_loss=stop_loss, take_profit=take_profit, leverage=leverage, trade_type=trade_type)
+        # Only Quotex is supported through the web interface
+        if broker != 'quotex':
+            broker = 'quotex'
+        
+        result = execute_quotex_trade(symbol, direction, amount, expiration=expiration, stop_loss=stop_loss, take_profit=take_profit, leverage=leverage, trade_type=trade_type)
         # Persist manual trade
         try:
             entry = {

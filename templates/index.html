@@ -1,125 +1,270 @@
 <!DOCTYPE html>
-<!DOCTYPE html>
-<html lang="en">
+<html lang="zh">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>HaiderBot — Minimal</title>
+  <title>HaiderBot Quotex 专业信号</title>
   <style>
-    body { font-family: Inter, system-ui, Arial; background:#0f1724; color:#e6eef8; margin:0; }
-    .wrap { max-width:960px; margin:28px auto; padding:20px; }
-    header { display:flex; align-items:center; justify-content:space-between; gap:12px; }
-    header h1 { font-size:20px; margin:0; }
-    .card { background:#0b1220; border:1px solid #1f2a44; border-radius:8px; padding:16px; margin-top:16px; }
-    .signal { text-align:center; padding:18px; font-weight:700; font-size:28px; border-radius:6px; }
-    .signal.wait { background:#2b3346; color:#c9d6f6; }
-    .signal.buy { background:#08360f; color:#9ff3b3; }
-    .signal.sell { background:#3b0b0b; color:#ffc6c6; }
-    .controls { display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
-    select,input { padding:8px 10px; border-radius:6px; background:#071026; color:#dbeafe; border:1px solid #20304a; }
-    button { padding:8px 12px; border-radius:6px; border:none; background:#0366d6; color:white; cursor:pointer; }
-    button.ghost { background:#1f2a44; }
-    table { width:100%; border-collapse:collapse; margin-top:12px; }
-    th,td { text-align:left; padding:8px; border-bottom:1px solid #11182733; font-size:13px; }
-    .muted { color:#a8b3c7; font-size:13px; }
+    :root {
+      color-scheme: dark;
+      font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", Arial, sans-serif;
+      background: #02050d;
+      color: #eef2ff;
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; min-height: 100vh; background: radial-gradient(circle at top left, rgba(56, 113, 255, 0.18), transparent 22%), linear-gradient(180deg, #061026 0%, #02050d 100%); }
+    .page { width: min(100%, 1180px); margin: 0 auto; padding: 22px 18px 28px; }
+    header { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 18px; align-items: center; }
+    header h1 { margin: 0; font-size: clamp(1.8rem, 2.8vw, 2.9rem); letter-spacing: 0.04em; }
+    header p { margin: 8px 0 0; color: #95b3ff; font-size: 0.98rem; line-height: 1.6; }
+    .top-actions { display: flex; gap: 12px; flex-wrap: wrap; }
+    .btn { border: none; border-radius: 16px; padding: 14px 22px; font-size: 1rem; font-weight: 700; cursor: pointer; transition: transform 0.16s ease, filter 0.16s ease; }
+    .btn:hover { transform: translateY(-1px); filter: brightness(1.05); }
+    .btn-primary { background: linear-gradient(135deg, #4d7cff, #26c0ff); color: #fff; }
+    .btn-secondary { background: rgba(255,255,255,0.08); color: #eef2ff; }
+    .grid-2 { display: grid; grid-template-columns: 1.4fr 1fr; gap: 18px; margin-top: 20px; }
+    .card { border-radius: 28px; background: rgba(9, 15, 31, 0.94); border: 1px solid rgba(97, 136, 255, 0.14); padding: 24px; }
+    .signal-card { display: grid; gap: 18px; }
+    .signal-card .section-title { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+    .signal-card .section-title h2 { margin: 0; color: #95b3ff; font-size: 0.95rem; letter-spacing: 0.18em; text-transform: uppercase; }
+    .signal-box { border-radius: 28px; background: linear-gradient(180deg, rgba(10, 16, 36, 0.96), rgba(5, 8, 18, 0.96)); border: 1px solid rgba(93, 131, 255, 0.14); padding: 28px 22px; text-align: center; }
+    .signal-box h1 { margin: 0; font-size: 3.2rem; letter-spacing: 0.08em; line-height: 1; }
+    .signal-box p { margin: 12px 0 0; color: #a9b8ff; font-size: 1rem; }
+    .signal-box.buy { color: #9df6c2; }
+    .signal-box.sell { color: #ffb3c5; }
+    .signal-box.wait { color: #c0d0ff; }
+    .badge { display: inline-flex; align-items: center; gap: 8px; padding: 8px 14px; border-radius: 999px; background: rgba(255,255,255,0.06); color: #b7cbff; font-size: 0.86rem; }
+    .options { display: grid; gap: 14px; }
+    .form-row { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; }
+    .form-row select, .form-row input { width: 100%; border-radius: 16px; border: 1px solid rgba(255,255,255,0.10); background: rgba(255,255,255,0.04); color: #eef2ff; padding: 14px 16px; font-size: 1rem; }
+    .option-label { color: #95afff; font-size: 0.9rem; margin-bottom: 10px; }
+    .trade-actions { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 6px; }
+    .info-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; margin-top: 18px; }
+    .info-item { border-radius: 18px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06); padding: 18px; }
+    .info-item strong { display: block; color: #8eb0ff; margin-bottom: 8px; font-size: 0.92rem; }
+    .info-item span { color: #eef2ff; font-size: 1.05rem; }
+    .chart-panel { min-height: 220px; display: grid; place-items: center; border-radius: 24px; background: linear-gradient(180deg, rgba(12, 12, 46, 0.95), rgba(6, 8, 18, 0.96)); border: 1px solid rgba(92, 117, 255, 0.16); color: #8fa6ff; }
+    .note { color: #8ea2cc; font-size: 0.92rem; margin-top: 10px; }
+    table { width: 100%; border-collapse: collapse; margin-top: 14px; }
+    th, td { text-align: left; padding: 14px 12px; font-size: 0.95rem; }
+    thead th { color: #8ea5ff; border-bottom: 1px solid rgba(255,255,255,0.08); }
+    tbody tr { border-bottom: 1px solid rgba(255,255,255,0.05); }
+    .history-signal.buy { color: #9df6c2; }
+    .history-signal.sell { color: #ffb3c5; }
+    .history-signal.wait { color: #c5d4ff; }
+    @media (max-width: 940px) { .grid-2 { grid-template-columns: 1fr; } .form-row { grid-template-columns: 1fr; } }
   </style>
 </head>
 <body>
-  <div class="wrap">
+  <div class="page">
     <header>
       <div>
-        <h1>HaiderBot</h1>
-        <div class="muted">Minimal trading UI — signals & controls</div>
+        <h1>HaiderBot Quotex 专业信号</h1>
+        <p>支持 5s / 15s / 30s / 1m / 5m / 15m / 30m / 1h / 4h / 1d / 1w，专注 Quotex CALL / PUT 交易。</p>
       </div>
-      <div>
-        <button onclick="getSignal()">Get Signal</button>
-        <button onclick="toggleAuto()" id="auto-btn" class="ghost">Start Auto</button>
+      <div class="top-actions">
+        <button class="btn btn-primary" onclick="getSignal()">刷新信号</button>
+        <button class="btn btn-secondary" onclick="toggleAuto()" id="auto-btn">启动自动</button>
       </div>
     </header>
 
-    <div class="card">
-      <div style="display:flex; gap:12px; align-items:center; justify-content:space-between;">
-        <div style="flex:1">
-          <div style="display:flex; gap:8px; align-items:center;">
-            <select id="symbol"><option>BTCUSDT</option><option>ETHUSD</option><option>EURUSD</option></select>
-            <select id="timeframe"><option>1m</option><option>5m</option><option>15m</option></select>
-            <input id="amount" type="number" value="5" style="width:80px" />
-            <select id="broker"><option>Simulated</option><option>Quotex</option><option>Binance</option></select>
-          </div>
+    <div class="grid-2">
+      <div class="card signal-card">
+        <div class="section-title">
+          <h2>当前信号</h2>
+          <span class="badge">Quotex 专用</span>
         </div>
-        <div style="text-align:right">
-          <button onclick="executeTrade('BUY')">Buy</button>
-          <button onclick="executeTrade('SELL')" style="margin-left:6px; background:#c33">Sell</button>
+        <div id="signal-box" class="signal-box wait">
+          <h1 id="signal-text">等待</h1>
+          <p id="signal-reason">点击上方刷新信号，实时获取交易建议。</p>
+        </div>
+        <div class="info-grid">
+          <div class="info-item"><strong>交易对</strong><span id="info-symbol">BTCUSDT</span></div>
+          <div class="info-item"><strong>时间周期</strong><span id="info-timeframe">1m</span></div>
+          <div class="info-item"><strong>信号强度</strong><span id="info-confidence">0%</span></div>
+          <div class="info-item"><strong>最后更新</strong><span id="info-last">--:--:--</span></div>
         </div>
       </div>
 
-      <div style="margin-top:12px">
-        <div id="signal-box" class="signal wait">ANALYZING...</div>
-        <div style="display:flex; justify-content:space-between; margin-top:8px;">
-          <div class="muted">Confidence: <span id="confidence">0%</span></div>
-          <div class="muted">Last: <span id="last-time">--</span></div>
+      <div class="card options">
+        <div class="option-label">仪表盘设置</div>
+        <div class="form-row">
+          <select id="symbol">
+            <option>BTCUSDT</option>
+            <option>ETHUSD</option>
+            <option>EURUSD</option>
+            <option>USDJPY</option>
+            <option>XAUUSD</option>
+            <option>SPX500</option>
+          </select>
+          <select id="timeframe">
+            <option>5s</option>
+            <option>15s</option>
+            <option>30s</option>
+            <option>1m</option>
+            <option>5m</option>
+            <option>15m</option>
+            <option>30m</option>
+            <option>1h</option>
+            <option>4h</option>
+            <option>1d</option>
+            <option>1w</option>
+          </select>
+          <input id="amount" type="number" min="1" value="5" placeholder="交易金额" />
         </div>
+        <div class="trade-actions">
+          <button class="btn btn-primary" onclick="executeTrade('BUY')">买入 CALL</button>
+          <button class="btn btn-alert" onclick="executeTrade('SELL')">卖出 PUT</button>
+        </div>
+        <p class="note">已锁定 Quotex / CALL / PUT，其他 Broker 不可选。</p>
       </div>
     </div>
 
-    <div class="card">
-      <div style="display:flex; justify-content:space-between; align-items:center;">
-        <strong>Signal History</strong>
-        <div class="muted">Most recent 20</div>
+    <div class="card chart-panel">
+      <div>趋势预览区（当前版本主要展示信号与指标，可按需扩展 K 线图）</div>
+    </div>
+
+    <div class="grid-2" style="margin-top: 18px;">
+      <div class="card">
+        <div class="section-title"><h2>指标摘要</h2></div>
+        <div class="info-grid">
+          <div class="info-item"><strong>RSI</strong><span id="indicator-rsi">-</span></div>
+          <div class="info-item"><strong>MACD</strong><span id="indicator-macd">-</span></div>
+          <div class="info-item"><strong>布林带</strong><span id="indicator-bb">-</span></div>
+          <div class="info-item"><strong>ATR</strong><span id="indicator-atr">-</span></div>
+        </div>
       </div>
+      <div class="card">
+        <div class="section-title"><h2>操作指南</h2></div>
+        <div class="note">选择目标交易对和时间框架后，点击“刷新信号”获取建议。若信号明确，可手动下单；自动交易可保持后台运行。</div>
+      </div>
+    </div>
+
+    <div class="card" style="margin-top: 18px;">
+      <div class="section-title"><h2>信号历史</h2></div>
       <table>
-        <thead><tr><th>Time</th><th>Symbol</th><th>Signal</th><th>Conf</th></tr></thead>
-        <tbody id="history-body"><tr><td colspan="4" class="muted">No signals yet</td></tr></tbody>
+        <thead>
+          <tr><th>时间</th><th>交易对</th><th>信号</th><th>置信</th></tr>
+        </thead>
+        <tbody id="history-body"><tr><td colspan="4" style="color:#7f92c4;">暂无历史记录</td></tr></tbody>
       </table>
     </div>
-
-    <div style="margin-top:18px; text-align:center;" class="muted">Server API available: <code>/api/signal</code> <code>/api/trade</code></div>
   </div>
 
   <script>
     let autoRunning = false;
-    async function getSignal(){
+    const hiddenBroker = 'quotex';
+
+    function setSignalState(signal) {
+      const signalBox = document.getElementById('signal-box');
+      const signalText = document.getElementById('signal-text');
+      signalBox.classList.remove('buy', 'sell', 'wait');
+      if (signal === 'BUY') { signalBox.classList.add('buy'); signalText.textContent = '买入 CALL'; }
+      else if (signal === 'SELL') { signalBox.classList.add('sell'); signalText.textContent = '卖出 PUT'; }
+      else { signalBox.classList.add('wait'); signalText.textContent = '等待'; }
+    }
+
+    async function getSignal() {
       const symbol = document.getElementById('symbol').value;
       const timeframe = document.getElementById('timeframe').value;
-      try{
-        const r = await fetch(`/api/signal?symbol=${symbol}&timeframe=${timeframe}`);
-        const d = await r.json();
-        document.getElementById('signal-box').textContent = d.signal || 'WAIT';
-        document.getElementById('confidence').textContent = (d.confidence||0)+'%';
-        document.getElementById('last-time').textContent = new Date().toLocaleTimeString();
-        document.getElementById('signal-box').className = 'signal ' + (d.signal||'wait').toLowerCase();
-        updateHistory(d.history || []);
-      }catch(e){ alert('Signal error: '+e); }
-    }
-
-    function updateHistory(arr){
-      const tbody = document.getElementById('history-body');
-      if(!arr || !arr.length){ tbody.innerHTML = '<tr><td colspan="4" class="muted">No signals yet</td></tr>'; return; }
-      tbody.innerHTML = arr.slice(0,20).map(it=>`<tr><td>${new Date(it.timestamp).toLocaleTimeString()}</td><td>${it.symbol}</td><td>${it.signal}</td><td>${it.confidence}%</td></tr>`).join('');
-    }
-
-    async function executeTrade(direction){
-      const symbol = document.getElementById('symbol').value;
-      const amount = parseFloat(document.getElementById('amount').value)||1;
-      const broker = document.getElementById('broker').value;
-      try{
-        const res = await fetch('/api/trade',{method:'POST',headers:{'Authorization':'Bearer {{ auth_token }}','Content-Type':'application/json'},body:JSON.stringify({symbol,direction,amount,broker})});
-        const j = await res.json();
-        alert('Trade: '+JSON.stringify(j));
-      }catch(e){ alert('Trade error: '+e); }
-    }
-
-    async function toggleAuto(){
-      if(!autoRunning){
-        const payload = {symbol: document.getElementById('symbol').value, timeframe: document.getElementById('timeframe').value, broker: document.getElementById('broker').value, amount: parseFloat(document.getElementById('amount').value)||1, min_confidence:75, max_trades_per_hour:6, check_interval:10 };
-        try{ const r = await fetch('/api/auto/start',{method:'POST',headers:{'Authorization':'Bearer {{ auth_token }}','Content-Type':'application/json'},body:JSON.stringify(payload)}); const j=await r.json(); if(j.ok){ autoRunning=true; document.getElementById('auto-btn').textContent='Stop Auto'; } else alert('Start failed'); }catch(e){alert(e);} 
-      } else {
-        try{ const r = await fetch('/api/auto/stop',{method:'POST',headers:{'Authorization':'Bearer {{ auth_token }}'}}); const j=await r.json(); if(j.ok){ autoRunning=false; document.getElementById('auto-btn').textContent='Start Auto'; } else alert('Stop failed'); }catch(e){alert(e);} 
+      try {
+        const response = await fetch(`/api/signal?symbol=${symbol}&timeframe=${timeframe}`);
+        const data = await response.json();
+        document.getElementById('signal-reason').textContent = data.reason || '信号生成完成';
+        document.getElementById('info-symbol').textContent = symbol;
+        document.getElementById('info-timeframe').textContent = timeframe;
+        document.getElementById('info-confidence').textContent = `${data.confidence || 0}%`;
+        document.getElementById('info-last').textContent = new Date().toLocaleTimeString();
+        setSignalState(data.signal || 'WAIT');
+        updateIndicators(data);
+        updateHistory(data.history || []);
+      } catch (error) {
+        document.getElementById('signal-reason').textContent = '请求失败，请检查服务';
+        console.error(error);
       }
     }
 
-    // load initial
-    getSignal();
+    function updateIndicators(data) {
+      document.getElementById('indicator-rsi').textContent = data.rsi !== undefined ? data.rsi : '-';
+      document.getElementById('indicator-macd').textContent = data.macd !== undefined ? data.macd.toFixed(4) : '-';
+      document.getElementById('indicator-bb').textContent = data.bb_lower !== undefined ? `L:${data.bb_lower.toFixed(4)} M:${data.bb_middle.toFixed(4)} U:${data.bb_upper.toFixed(4)}` : '-';
+      document.getElementById('indicator-atr').textContent = data.atr !== undefined ? data.atr.toFixed(4) : '-';
+    }
+
+    function updateHistory(arr) {
+      const body = document.getElementById('history-body');
+      if (!arr || !arr.length) {
+        body.innerHTML = '<tr><td colspan="4" style="color:#7f92c4;">暂无历史记录</td></tr>';
+        return;
+      }
+      body.innerHTML = arr.slice(0, 20).map(item => {
+        const signalClass = item.signal ? item.signal.toLowerCase() : 'wait';
+        return `<tr><td>${new Date(item.timestamp).toLocaleTimeString()}</td><td>${item.symbol}</td><td class="history-signal ${signalClass}">${item.signal || 'WAIT'}</td><td>${item.confidence || 0}%</td></tr>`;
+      }).join('');
+    }
+
+    async function executeTrade(direction) {
+      const symbol = document.getElementById('symbol').value;
+      const amount = parseFloat(document.getElementById('amount').value) || 1;
+      try {
+        const response = await fetch('/api/trade', {
+          method: 'POST',
+          headers: {
+            'Authorization': 'Bearer {{ auth_token }}',
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ symbol, direction, amount, broker: hiddenBroker })
+        });
+        const result = await response.json();
+        alert('交易结果：' + JSON.stringify(result));
+      } catch (error) {
+        alert('交易失败，请检查日志');
+        console.error(error);
+      }
+    }
+
+    async function toggleAuto() {
+      if (!autoRunning) {
+        const payload = {
+          symbol: document.getElementById('symbol').value,
+          timeframe: document.getElementById('timeframe').value,
+          broker: hiddenBroker,
+          amount: parseFloat(document.getElementById('amount').value) || 1,
+          min_confidence: 70,
+          max_trades_per_hour: 6,
+          check_interval: 10
+        };
+        const response = await fetch('/api/auto/start', {
+          method: 'POST',
+          headers: {
+            'Authorization': 'Bearer {{ auth_token }}',
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(payload)
+        });
+        const data = await response.json();
+        if (data.ok) {
+          autoRunning = true;
+          document.getElementById('auto-btn').textContent = '停止自动';
+        } else {
+          alert('自动启动失败');
+        }
+      } else {
+        const response = await fetch('/api/auto/stop', {
+          method: 'POST',
+          headers: { 'Authorization': 'Bearer {{ auth_token }}' }
+        });
+        const data = await response.json();
+        if (data.ok) {
+          autoRunning = false;
+          document.getElementById('auto-btn').textContent = '启动自动';
+        } else {
+          alert('停止失败');
+        }
+      }
+    }
+
+    window.addEventListener('load', getSignal);
   </script>
 </body>
 </html>

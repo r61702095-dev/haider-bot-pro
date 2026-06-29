@@ -10,7 +10,21 @@ from typing import Dict, List, Any, Callable, Optional, Union, Tuple
 from datetime import datetime
 from collections import defaultdict, deque
 import pandas as pd
-from loguru import logger
+try:
+    from loguru import logger
+    # configure file logger
+    logger.remove()
+    log_filename = f"log-{time.strftime('%Y-%m-%d')}.txt"
+    logger.add(log_filename, level="INFO", encoding="utf-8", backtrace=True, diagnose=True)
+except Exception:
+    import logging
+    logger = logging.getLogger("api_quotex")
+    if not logger.handlers:
+        handler = logging.StreamHandler()
+        formatter = logging.Formatter("%(asctime)s %(levelname)s %(name)s: %(message)s")
+        handler.setFormatter(formatter)
+        logger.addHandler(handler)
+    logger.setLevel(logging.INFO)
 
 from .monitoring import error_monitor, health_checker, ErrorCategory, ErrorSeverity
 from .websocket_client import AsyncWebSocketClient
@@ -21,11 +35,6 @@ from .utils import sanitize_symbol, format_session_id, retry_async, candles_to_d
 from .login import get_ssid
 from .config import Config
 from .connection_keep_alive import ConnectionKeepAlive
-
-# Logging
-logger.remove()
-log_filename = f"log-{time.strftime('%Y-%m-%d')}.txt"
-logger.add(log_filename, level="INFO", encoding="utf-8", backtrace=True, diagnose=True)
 
 # Fast path: ultra-low-latency candle store
 class FastCandleStore:
@@ -99,8 +108,11 @@ class AsyncQuotexClient:
         self.ssl_mutual_exclusion: bool = False
         self.ssl_mutual_exclusion_write: bool = False
         if not enable_logging:
-            logger.remove()
-            logger.add(lambda msg: None, level="CRITICAL")
+            if hasattr(logger, 'remove'):
+                logger.remove()
+                logger.add(lambda msg: None, level="CRITICAL")
+            else:
+                logger.setLevel(100)  # CRITICAL level for stdlib logging
         self._original_demo = None
         if ssid.startswith('42["authorization",'):
             self._parse_complete_ssid(ssid)
